@@ -1,4 +1,4 @@
-streamlit
-pandas
-plotly>=5.0.0
-pandasql
+streamlit==1.32.0
+pandas==2.2.2
+plotly==5.20.0
+pandasql==0.7.3
