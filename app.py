@@ -3,6 +3,17 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+st.markdown("""
+<style>
+.main {
+    background-color: #f5f7fa;
+}
+h1, h2, h3 {
+    color: #2c3e50;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ==============================
 # ⚙️ Page Config
 # ==============================
