@@ -24,6 +24,6 @@ pip install -r requirement.txt
 streamlit run app.py
 
 ## 🌐 Live Demo
-(Will be added after deployment)
+https://dataanalystdashboard.streamlit.app/
 
 
