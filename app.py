@@ -33,7 +33,7 @@ page = st.sidebar.radio(
 # ==============================
 # 🏠 Main Title
 # ==============================
-st.title("📊 Data Analyst Dashboard")
+st.title("📊 Interactive Data Analytics Dashboard")
 st.markdown("### Upload • Clean • Analyze • Visualize")
 
 # ==============================
