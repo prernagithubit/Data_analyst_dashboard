@@ -1,4 +1,4 @@
-# 📊 Data Analyst Dashboard
+# 📊Interactive Data Analysis & Visualization Dashboard using Streamlit
 
 An interactive data analysis dashboard built using Streamlit.
 
