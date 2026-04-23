@@ -3,10 +3,21 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+# ==============================
+# ⚙️ Page Config
+# ==============================
+st.set_page_config(page_title="Data Analytics Dashboard", layout="wide")
+
+# ==============================
+# 🎨 Custom Styling
+# ==============================
 st.markdown("""
 <style>
 .main {
-    background-color: #f5f7fa;
+    background-color: #f8fafc;
+}
+.block-container {
+    padding-top: 2rem;
 }
 h1, h2, h3 {
     color: #2c3e50;
@@ -15,12 +26,7 @@ h1, h2, h3 {
 """, unsafe_allow_html=True)
 
 # ==============================
-# ⚙️ Page Config
-# ==============================
-st.set_page_config(page_title="Data Analyst Dashboard", layout="wide")
-
-# ==============================
-# 🚀 Caching
+# 🚀 Load Data
 # ==============================
 @st.cache_data
 def load_data(file):
@@ -30,26 +36,18 @@ def load_data(file):
         return pd.read_excel(file)
 
 # ==============================
-# 🎛️ Sidebar
-# ==============================
-st.sidebar.title("⚙️ Dashboard Controls")
-uploaded_file = st.sidebar.file_uploader("Upload CSV/Excel", type=["csv", "xlsx"])
-
-# Navigation
-page = st.sidebar.radio(
-    "📂 Navigate",
-    ["Overview", "Data Cleaning", "Visualization", "Advanced Analysis", "Insights"]
-)
-
-# ==============================
-# 🏠 Main Title
+# 🔝 HEADER
 # ==============================
 st.title("📊 Interactive Data Analytics Dashboard")
-st.markdown("### Upload • Clean • Analyze • Visualize")
+st.markdown("Analyze, clean, and visualize your data in one place")
+st.info("📂 Upload your dataset from the sidebar to start analysis")
+st.divider()
 
 # ==============================
-# 📂 Load Data
+# 📂 Sidebar Upload
 # ==============================
+uploaded_file = st.sidebar.file_uploader("Upload CSV/Excel", type=["csv", "xlsx"])
+
 if uploaded_file is not None:
     df = load_data(uploaded_file)
 
@@ -58,50 +56,64 @@ if uploaded_file is not None:
     categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
 
     # ==============================
-    # 🔍 Multi Filters
+    # 🎛️ FILTER BAR (TOP)
     # ==============================
-    st.sidebar.subheader("🔍 Filters")
-    filter_cols = st.sidebar.multiselect("Select Columns", df.columns)
+    st.subheader("🔍 Filters")
 
-    for col in filter_cols:
+    selected_cols = st.multiselect("Select Columns to Filter", df.columns)
+
+    for col in selected_cols:
         values = df[col].dropna().unique()
-        selected = st.sidebar.multiselect(f"{col}", values, default=values)
+        selected = st.multiselect(f"{col}", values, default=values)
         df = df[df[col].isin(selected)]
 
+    if df.empty:
+        st.warning("No data available after filtering")
+        st.stop()
+
+    st.divider()
+
     # ==============================
-    # 📌 OVERVIEW
+    # 📊 KPI SECTION
     # ==============================
-    if page == "Overview":
+    st.subheader("📊 Key Metrics")
 
-        st.subheader("📌 Data Preview")
-        st.dataframe(df.head())
+    if len(numeric_cols) > 0:
+        metric_col = st.selectbox("Select KPI Column", numeric_cols)
 
-        st.subheader("📊 Data Info")
-        col1, col2 = st.columns(2)
+        k1, k2, k3 = st.columns(3)
+        k1.metric("Total", f"{df[metric_col].sum():,.2f}")
+        k2.metric("Average", f"{df[metric_col].mean():,.2f}")
+        k3.metric("Max", f"{df[metric_col].max():,.2f}")
 
-        with col1:
-            st.write("Shape:", df.shape)
+    st.divider()
 
-        with col2:
-            st.write(df.describe())
+    # ==============================
+    # 📈 VISUALIZATION GRID
+    # ==============================
+    st.subheader("📈 Visualizations")
 
-        # KPI Section
-        st.subheader("📊 Key Metrics")
+    c1, c2 = st.columns(2)
 
+    with c1:
         if len(numeric_cols) > 0:
-            metric_col = st.selectbox("Select KPI Column", numeric_cols)
+            col = st.selectbox("Histogram Column", numeric_cols)
+            fig = px.histogram(df, x=col)
+            st.plotly_chart(fig, use_container_width=True)
 
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Total", f"{df[metric_col].sum():,.2f}")
-            c2.metric("Average", f"{df[metric_col].mean():,.2f}")
-            c3.metric("Max", f"{df[metric_col].max():,.2f}")
+    with c2:
+        if len(numeric_cols) > 1:
+            x_col = st.selectbox("X-axis", numeric_cols)
+            y_col = st.selectbox("Y-axis", numeric_cols)
+            fig = px.scatter(df, x=x_col, y=y_col, color=y_col, hover_data=df.columns)
+            st.plotly_chart(fig, use_container_width=True)
+
+    st.divider()
 
     # ==============================
-    # 🧹 DATA CLEANING
+    # 🧹 DATA CLEANING (EXPANDER)
     # ==============================
-    elif page == "Data Cleaning":
-
-        st.subheader("🧹 Data Cleaning Panel")
+    with st.expander("🧹 Data Cleaning Options"):
 
         clean_option = st.selectbox(
             "Handle Missing Values",
@@ -124,119 +136,63 @@ if uploaded_file is not None:
             df = df.drop_duplicates()
             st.success("Duplicates Removed")
 
-        st.dataframe(df.head())
-
     # ==============================
-    # 📈 VISUALIZATION
+    # 🔥 ADVANCED ANALYSIS
     # ==============================
-    elif page == "Visualization":
+    st.subheader("📊 Advanced Analysis")
 
-        st.subheader("📈 Visualization Studio")
+    a1, a2 = st.columns(2)
 
-        chart_type = st.selectbox(
-            "Select Chart Type",
-            ["Histogram", "Bar Chart", "Line Chart", "Scatter Plot", "Box Plot"]
-        )
-
-        if chart_type == "Histogram" and len(numeric_cols) > 0:
-            col = st.selectbox("Column", numeric_cols)
-            fig = px.histogram(df, x=col)
-            st.plotly_chart(fig, use_container_width=True)
-
-        elif chart_type == "Bar Chart" and len(categorical_cols) > 0:
-            col = st.selectbox("Column", categorical_cols)
-            data = df[col].value_counts().reset_index()
-            fig = px.bar(data, x='index', y=col, color='index')
-            st.plotly_chart(fig, use_container_width=True)
-
-        elif chart_type == "Line Chart" and len(numeric_cols) > 0:
-            col = st.selectbox("Column", numeric_cols)
-            fig = px.line(df, y=col)
-            st.plotly_chart(fig, use_container_width=True)
-
-        elif chart_type == "Scatter Plot" and len(numeric_cols) > 1:
-            x_col = st.selectbox("X-axis", numeric_cols)
-            y_col = st.selectbox("Y-axis", numeric_cols)
-            fig = px.scatter(df, x=x_col, y=y_col, color=y_col)
-            st.plotly_chart(fig, use_container_width=True)
-
-        elif chart_type == "Box Plot" and len(numeric_cols) > 0:
-            col = st.selectbox("Column", numeric_cols)
-            fig = px.box(df, y=col)
-            st.plotly_chart(fig, use_container_width=True)
-
-        else:
-            st.warning("Suitable columns not available")
-
-    # ==============================
-    # 📊 ADVANCED ANALYSIS
-    # ==============================
-    elif page == "Advanced Analysis":
-
-        st.subheader("🔥 Correlation Heatmap")
-
+    with a1:
         if len(numeric_cols) > 1:
             corr = df[numeric_cols].corr()
             fig = px.imshow(corr, text_auto=True)
             st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning("Not enough numeric columns")
 
-        st.subheader("📌 GroupBy Analysis")
-
+    with a2:
         if len(categorical_cols) > 0 and len(numeric_cols) > 0:
             group_col = st.selectbox("Group By", categorical_cols)
             agg_col = st.selectbox("Value Column", numeric_cols)
-            agg_func = st.selectbox("Aggregation", ["sum", "mean", "max", "min"])
 
-            grouped_df = df.groupby(group_col)[agg_col].agg(agg_func).reset_index()
-
-            st.dataframe(grouped_df)
-
-            fig = px.bar(grouped_df, x=group_col, y=agg_col, color=group_col)
+            grouped = df.groupby(group_col)[agg_col].mean().reset_index()
+            fig = px.bar(grouped, x=group_col, y=agg_col)
             st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning("Need categorical and numeric columns")
+
+    st.divider()
 
     # ==============================
     # 🧠 INSIGHTS
     # ==============================
-    elif page == "Insights":
+    st.subheader("🧠 Insights")
 
-        st.subheader("🧠 Automated Insights")
+    if len(numeric_cols) > 0:
+        col = st.selectbox("Select Column", numeric_cols)
 
-        if len(numeric_cols) > 0:
-            col = st.selectbox("Select Column", numeric_cols)
+        mean = df[col].mean()
+        median = df[col].median()
 
-            mean = df[col].mean()
-            median = df[col].median()
-            max_val = df[col].max()
-            min_val = df[col].min()
-
-            if mean > median:
-                st.write(f"📌 {col} is right-skewed (high outliers)")
-            else:
-                st.write(f"📌 {col} is left-skewed")
-
-            st.write(f"📊 Average: {mean:.2f}")
-            st.write(f"🔝 Max: {max_val}")
-            st.write(f"🔻 Min: {min_val}")
-
-            # IQR
-            q1 = df[col].quantile(0.25)
-            q3 = df[col].quantile(0.75)
-
-            st.write(f"📦 IQR Range: {q1:.2f} - {q3:.2f}")
-
+        if mean > median:
+            st.success(f"{col} is right-skewed (outliers present)")
         else:
-            st.warning("No numeric columns available")
+            st.info(f"{col} is left-skewed")
+
+        st.write(f"📊 Average: {mean:.2f}")
+        st.write(f"📦 IQR: {df[col].quantile(0.25):.2f} - {df[col].quantile(0.75):.2f}")
+
+    st.divider()
 
     # ==============================
     # ⬇️ DOWNLOAD
     # ==============================
-    st.subheader("⬇️ Download Cleaned Data")
+    st.subheader("⬇️ Download Data")
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button("Download CSV", csv, "cleaned_data.csv")
 
 else:
     st.info("👆 Upload a file to begin")
+
+# ==============================
+# ⬇️ FOOTER
+# ==============================
+st.markdown("---")
+st.markdown("Built with Streamlit | Data Analyst Portfolio Project")
