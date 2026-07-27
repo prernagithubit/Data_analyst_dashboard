@@ -13,7 +13,7 @@ An interactive data analysis dashboard built using Streamlit.
 
 ## 🛠 Tech Stack
 - Python
-- Streamlit
+- Streamlit-Dashboard
 - Pandas
 - Plotly
 
